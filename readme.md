@@ -14,3 +14,15 @@ npm install
 ```
 npm start
 ```
+
+## Creating a new build for release
+
+```
+npm run dist
+```
+
+## Generating a new app icon
+
+```
+iconutil -c icns Icon-Nettmaker-Wallpaper.iconset
+```
