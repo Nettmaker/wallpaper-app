@@ -1,5 +1,6 @@
 {
-  "name": "Nettmaker Wallpaper",
+  "name": "nettmaker-wallpaper",
+  "productName": "Nettmaker Wallpaper",
   "version": "1.0.0",
   "description": "Sets a wallpaper background automatically",
   "main": "main.js",
