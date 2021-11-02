@@ -6,6 +6,7 @@ const storage = require('electron-json-storage');
 const fs = require('fs');
 const fetch = require('node-fetch');
 const EventEmitter = require('events');
+const { autoUpdater } = require("electron-updater");
 
 /**
  * How this should work.
@@ -68,6 +69,8 @@ app.whenReady().then(() => {
 	// We want to resett the background, every time
 	// the monitor setup changes
 	app.on('gpu-info-update', handle_monitor_change);
+
+	autoUpdater.checkForUpdatesAndNotify();
 });
 
 function handle_monitor_change(){
