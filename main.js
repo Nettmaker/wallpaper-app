@@ -41,6 +41,9 @@ var timeout = 0;
 
 app.whenReady().then(() => {
 
+  // storage.clear(function(error) {
+  //   if (error) throw error;
+  // });
 
   eventEmitter.on('wallpaper-list-updated', sync_wallpapers );
   eventEmitter.on('wallpaper-downloaded', save_wallpaper_setting );
@@ -48,7 +51,9 @@ app.whenReady().then(() => {
   eventEmitter.on('wallpaper-changed', update_menu );
   eventEmitter.on('wallpaper-list-updated', update_menu );
 
-  // load_available_wallpapers();
+  load_available_wallpapers();
+
+  
 
   tray = new Tray('menuIconTemplate.png');
   
@@ -80,8 +85,12 @@ function update_menu(){
 
   var current = storage.getSync('current');
   var available = storage.getSync('available-wallpapers');
-  var last_month = Object.keys( available.list ).pop();
-  var last = available.list[ last_month ];
+
+  if( available.list ) {
+    var last_month = Object.keys( available.list ).pop();
+    var last = available.list[ last_month ];
+  }
+
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -100,7 +109,7 @@ function update_menu(){
     {
       id: 'apply-latest',
       label: 'Apply latest wallpaper',
-      enabled: current.key != last_month,
+      enabled: available.list && current.key != last_month,
       click: () => {
         storage.set(
           'current',
@@ -115,6 +124,7 @@ function update_menu(){
     {
       id: 'apply-random',
       label: 'Apply random wallpaper',
+      enabled: available.list || false,
       click: () => {
         let months = Object.keys( available.list );
 
