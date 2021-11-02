@@ -1,4 +1,5 @@
 const { app, Menu, Tray, BrowserWindow, screen } = require('electron')
+const {enforceMacOSAppLocation, showAboutWindow} = require('electron-util');
 const wallpaper = require('wallpaper');
 const Downloader = require('nodejs-file-downloader');
 const storage = require('electron-json-storage');
@@ -41,6 +42,8 @@ var timeout = 0;
 app.whenReady().then(() => {
 
 	app.dock.hide();
+
+	enforceMacOSAppLocation();
 
 	// storage.clear(function(error) {
 	//   if (error) throw error;
@@ -162,8 +165,33 @@ function update_menu(){
 		},
 		{ type: 'separator' },
 		{
-			label: 'Check for updates',
+			label: ( (storage.getSync('auto_open')).active ? '✓ ' : '' ) + 'Start at login',
+			click: function(){
+				let open_at_login = storage.getSync( 'auto_open' );
+				app.setLoginItemSettings({
+					openAtLogin: !open_at_login.active
+				});
+
+				open_at_login.active = !open_at_login.active;
+				
+				storage.set( 'auto_open', open_at_login, () => {
+					update_menu();
+				} );
+
+			}
+		},
+		{
+			label: 'Check for new wallpapers',
 			click: load_available_wallpapers
+		},
+		{
+			label: 'About',
+			click: () => {
+				showAboutWindow( {
+					copyright: 'Copyright © Thomas Bensmann',
+					text: 'Because sometimes simple problems need complex solutions.'
+				})
+			}
 		},
 		{
 			label: 'Quit',
