@@ -128,23 +128,35 @@ function update_menu(){
       label: 'Apply random wallpaper',
       enabled: available.list || false,
       click: () => {
-        let months = Object.keys( available.list );
+		let background_list = {...available.list};
 
-        // remove the current wallpaper
-        var index = months.indexOf( current.key );
-        if (index !== -1) {
-          months.splice(index, 1);
-        }
+		if( background_list[ current.key ] ) {
+		  delete background_list[ current.key ];
+		}
+		
+		if( has_portrait_screens() ) {
+			// Remove wallpaper if no portrait size is available	
+			  for ( let item_month in background_list ) {
+				if (background_list[item_month]["portrait"] == false) {
+					delete background_list[item_month];
+				}
+			}
+		}
 
-        let random_month = months[ Math.floor( Math.random() * months.length ) ];
-        let item = available.list[ random_month ];
-        
-        storage.set('current', {
-          month: item,
-          key: random_month
-        }, () => {
-          set_wallpapers( item );
-        });
+		let keys = Object.keys( background_list );
+		let random_month = keys[ Math.floor( Math.random() * keys.length ) ];
+		let item = available.list[ random_month ];
+		
+		storage.set(
+		  'current',
+		  {
+			month: item,
+			key: random_month
+		  },
+		  () => {
+			  set_wallpapers( item );
+		  }
+		);
       }
     },
     { type: 'separator' },
