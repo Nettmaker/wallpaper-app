@@ -1,20 +1,32 @@
 {
-  "name": "nettmaker-wallpaper",
+  "name": "Nettmaker Wallpaper",
   "version": "1.0.0",
   "description": "Sets a wallpaper background automatically",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "postinstall": "electron-builder install-app-deps",
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "no.nettmaker.wallpaper",
+    "icon": "./Icon-Nettmaker-Wallpaper.icns",
+    "files": [
+      "!files/*"
+    ]
   },
   "author": "Thomas Bensmann",
   "license": "MIT",
-  "devDependencies": {
-    "electron": "^15.3.0",
+  "dependencies": {
     "electron-json-storage": "^4.5.0",
-    "moment": "^2.29.1",
     "node-downloader-helper": "^1.0.19",
     "node-fetch": "^2.0.0",
     "nodejs-file-downloader": "^4.7.4",
     "wallpaper": "^5.0.1"
+  },
+  "devDependencies": {
+    "electron": "^15.3.0",
+    "electron-builder": "^22.13.1"
   }
 }

@@ -1,9 +1,8 @@
 const { app, Menu, Tray, BrowserWindow, screen } = require('electron')
 const wallpaper = require('wallpaper');
 const Downloader = require('nodejs-file-downloader');
-const Moment = require('moment');
-var fs   = require('fs');
 const storage = require('electron-json-storage');
+const fs = require('fs');
 const fetch = require('node-fetch');
 const EventEmitter = require('events');
 
@@ -36,14 +35,18 @@ const EventEmitter = require('events');
  */
 
 const eventEmitter = new EventEmitter();
-var tray;
+var tray = false;
 var timeout = 0;
 
 app.whenReady().then(() => {
 
+  app.dock.hide();
+
   // storage.clear(function(error) {
   //   if (error) throw error;
   // });
+  
+  load_available_wallpapers();
 
   eventEmitter.on('wallpaper-list-updated', sync_wallpapers );
   eventEmitter.on('wallpaper-downloaded', save_wallpaper_setting );
@@ -51,11 +54,10 @@ app.whenReady().then(() => {
   eventEmitter.on('wallpaper-changed', update_menu );
   eventEmitter.on('wallpaper-list-updated', update_menu );
 
-  load_available_wallpapers();
 
   
 
-  tray = new Tray('menuIconTemplate.png');
+  tray = new Tray( app.getAppPath() + '/menuIconTemplate.png' );
   
   // set the intial menu
   update_menu();
@@ -149,6 +151,10 @@ function update_menu(){
     {
       label: 'Check for updates',
       click: load_available_wallpapers
+    },
+    {
+      label: 'Quit',
+      click: () => { app.quit() }
     }
   ])
   tray.setToolTip('Time for a new look?');
@@ -189,11 +195,11 @@ function sync_wallpapers( list ){
 
     var data = storage.getSync( 'wallpapers.' + month );
 
-    if( item.portrait && !data.portrait ) {
+    if( item.portrait && !(data.portrait && wallpaper_exists( item.portrait ) ) ) {
       download_wallpaper( item.portrait, 'portrait', month );
     }
     
-    if( item.landscape && !data.landscape ) {
+    if( item.landscape && !(data.landscape && wallpaper_exists( item.landscape ) ) ) {
       download_wallpaper( item.landscape, 'landscape', month );
     }
   }
@@ -208,18 +214,18 @@ function save_wallpaper_setting( filename, orientation, key ){
   }
 }
 
-// function wallpaper_exists( filename ){
-//   console.log( 'check for ' + filename );
-//   try {
-//     if ( fs.existsSync( app.getAppPath() + '/files/' + filename ) ) {
-//       return true
-//     }
-//   } catch(err) {
-//     console.error(err)
-//   }
+function wallpaper_exists( filename ){
+  console.log( 'check for ' + filename );
+  try {
+    if ( fs.existsSync( app.getPath( 'userData' ) + '/files/' + filename ) ) {
+      return true
+    }
+  } catch(err) {
+    console.error(err)
+  }
 
-//   return false;
-// }
+  return false;
+}
 
 function download_wallpaper( filename, orientation = '', key = false ){
   console.log( 'downloading ' + filename );
@@ -227,7 +233,7 @@ function download_wallpaper( filename, orientation = '', key = false ){
 
     const downloader = new Downloader({
       url: "https://github.com/Nettmaker/wallpapers/raw/main/" + filename,
-      directory: "./files",//This folder will be created, if it doesn't exist.               
+      directory: app.getPath( 'userData' ) + "/files",//This folder will be created, if it doesn't exist.               
     })
   
     try {
@@ -260,6 +266,14 @@ function has_portrait_screens(){
 function set_wallpapers( month ) {
   const displays = screen.getAllDisplays();
 
+  if( month.portrait && !wallpaper_exists( month.portrait ) ) {
+    return;
+  }
+
+  if( month.landscape && !wallpaper_exists( month.landscape ) ) {
+    return;
+  }
+
   for( var i = 0; i < displays.length; i++ ) {
     
     console.log( 'Checking screen ' + i );
@@ -277,9 +291,9 @@ function set_wallpapers( month ) {
       screen: screen
     }).then( ( path ) => {
       
-      if( path != app.getAppPath() + '/files/' + image ) {
+      if( path != app.getPath( 'userData' ) + '/files/' + image ) {
         console.log('wallpaper on screen ' + screen + ' has changed – updating it now');
-        wallpaper.set( './files/' + image, {
+        wallpaper.set( app.getPath( 'userData' ) + '/files/' + image, {
           'screen': screen,
           'scale': 'fill'
         });
