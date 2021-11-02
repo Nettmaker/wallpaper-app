@@ -40,43 +40,43 @@ var timeout = 0;
 
 app.whenReady().then(() => {
 
-  app.dock.hide();
+	app.dock.hide();
 
-  // storage.clear(function(error) {
-  //   if (error) throw error;
-  // });
-  
-  load_available_wallpapers();
+	// storage.clear(function(error) {
+	//   if (error) throw error;
+	// });
+	
+	load_available_wallpapers();
 
-  eventEmitter.on('wallpaper-list-updated', sync_wallpapers );
-  eventEmitter.on('wallpaper-downloaded', save_wallpaper_setting );
-  
-  eventEmitter.on('wallpaper-changed', update_menu );
-  eventEmitter.on('wallpaper-list-updated', update_menu );
+	eventEmitter.on('wallpaper-list-updated', sync_wallpapers );
+	eventEmitter.on('wallpaper-downloaded', save_wallpaper_setting );
+	
+	eventEmitter.on('wallpaper-changed', update_menu );
+	eventEmitter.on('wallpaper-list-updated', update_menu );
 
 
-  
+	
 
-  tray = new Tray( app.getAppPath() + '/menuIconTemplate.png' );
-  
-  // set the intial menu
-  update_menu();
+	tray = new Tray( app.getAppPath() + '/menuIconTemplate.png' );
+	
+	// set the intial menu
+	update_menu();
 
-  // We want to resett the background, every time
-  // the monitor setup changes
-  app.on('gpu-info-update', handle_monitor_change);
+	// We want to resett the background, every time
+	// the monitor setup changes
+	app.on('gpu-info-update', handle_monitor_change);
 });
 
 function handle_monitor_change(){
-  // Todo: check if anything actually changed
-  clearTimeout( timeout );
-  timeout = setTimeout( () => {
-    var current = storage.getSync('current');
-    console.log( 'applying the background again' );
-    if( current.month ) {
-      set_wallpapers( current.month );
-    }
-  }, 300 );
+	// Todo: check if anything actually changed
+	clearTimeout( timeout );
+	timeout = setTimeout( () => {
+		var current = storage.getSync('current');
+		console.log( 'applying the background again' );
+		if( current.month ) {
+			set_wallpapers( current.month );
+		}
+	}, 300 );
 }
 
 /**
@@ -85,80 +85,93 @@ function handle_monitor_change(){
  */
 function update_menu(){
 
-  var current = storage.getSync('current');
-  var available = storage.getSync('available-wallpapers');
+	var current = storage.getSync('current');
+	var available = storage.getSync('available-wallpapers');
 
-  if( available.list ) {
-    var last_month = Object.keys( available.list ).pop();
-    var last = available.list[ last_month ];
-  }
+	if( available.list ) {
+		var last_month = Object.keys( available.list ).pop();
+		var last = available.list[ last_month ];
+	}
 
 
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      id: 're-apply',
-      label: 'Re-apply wallpaper',
-      enabled: current.month ? true : false,
-      click: () => {
-        if( current.month ) {
-          set_wallpapers( current.month );
-        } else {
-          // Show an error
-        }
-      }
-    },
-    { type: 'separator' },
-    {
-      id: 'apply-latest',
-      label: 'Apply latest wallpaper',
-      enabled: available.list && current.key != last_month,
-      click: () => {
-        storage.set(
-          'current',
-          {
-            month: last,
-            key: last_month
-          },
-          () => set_wallpapers( last )  
-        );
-      }
-    },
-    {
-      id: 'apply-random',
-      label: 'Apply random wallpaper',
-      enabled: available.list || false,
-      click: () => {
-        let months = Object.keys( available.list );
+	const contextMenu = Menu.buildFromTemplate([
+		{
+			id: 're-apply',
+			label: 'Re-apply wallpaper',
+			enabled: current.month ? true : false,
+			click: () => {
+				if( current.month ) {
+					set_wallpapers( current.month );
+				} else {
+					// Show an error
+				}
+			}
+		},
+		{ type: 'separator' },
+		{
+			id: 'apply-latest',
+			label: 'Apply latest wallpaper',
+			enabled: available.list && current.key != last_month,
+			click: () => {
+				storage.set(
+					'current',
+					{
+						month: last,
+						key: last_month
+					},
+					() => set_wallpapers( last )  
+				);
+			}
+		},
+		{
+			id: 'apply-random',
+			label: 'Apply random wallpaper',
+			enabled: available.list || false,
+			click: () => {
+				let background_list = {...available.list};
 
-        // remove the current wallpaper
-        var index = months.indexOf( current.key );
-        if (index !== -1) {
-          months.splice(index, 1);
-        }
+				if( background_list[ current.key ] ) {
+					delete background_list[ current.key ];
+				}
 
-        let random_month = months[ Math.floor( Math.random() * months.length ) ];
-        let item = available.list[ random_month ];
-        
-        storage.set('current', {
-          month: item,
-          key: random_month
-        }, () => {
-          set_wallpapers( item );
-        });
-      }
-    },
-    { type: 'separator' },
-    {
-      label: 'Check for updates',
-      click: load_available_wallpapers
-    },
-    {
-      label: 'Quit',
-      click: () => { app.quit() }
-    }
-  ])
-  tray.setToolTip('Time for a new look?');
-  tray.setContextMenu(contextMenu);
+				if( has_portrait_screens() ) {
+					for( item_month in background_list ) {
+						let current_item = background_list[ item_month ];
+
+						if( !current_item.portrait ) {
+							delete background_list[ item_month ];
+						}
+					}
+				}
+
+				let keys = Object.keys( background_list );
+				let random_month = keys[ Math.floor( Math.random() * keys.length ) ];
+				let item = available.list[ random_month ];
+
+				storage.set(
+					'current',
+					{
+						month: item,
+						key: random_month
+					},
+					() => {
+							set_wallpapers( item );
+					}
+				);
+			}
+		},
+		{ type: 'separator' },
+		{
+			label: 'Check for updates',
+			click: load_available_wallpapers
+		},
+		{
+			label: 'Quit',
+			click: () => { app.quit() }
+		}
+	])
+	tray.setToolTip('Time for a new look?');
+	tray.setContextMenu(contextMenu);
 }
 
 /*
@@ -166,22 +179,22 @@ function update_menu(){
  */
 function load_available_wallpapers(){
 
-  let url = "https://raw.githubusercontent.com/Nettmaker/wallpapers/main/wallpapers.json";
+	let url = "https://raw.githubusercontent.com/Nettmaker/wallpapers/main/wallpapers.json";
 
-  let settings = { method: "Get" };
+	let settings = { method: "Get" };
 
-  fetch(url, settings)
-      .then(res => res.json())
-      .then((json) => {
-        console.log('downloaded');
-        storage.set( 'available-wallpapers', {
-          list: json,
-          timestamp: + new Date()
-        }, () => {
-          eventEmitter.emit('wallpaper-list-updated', json);
-        });
-        
-      });
+	fetch(url, settings)
+			.then(res => res.json())
+			.then((json) => {
+				console.log('downloaded');
+				storage.set( 'available-wallpapers', {
+					list: json,
+					timestamp: + new Date()
+				}, () => {
+					eventEmitter.emit('wallpaper-list-updated', json);
+				});
+				
+			});
 }
 
 /*
@@ -189,121 +202,121 @@ function load_available_wallpapers(){
  * feed, and download them if they don't exist already
  */
 function sync_wallpapers( list ){
-  for( month in list ) {
+	for( month in list ) {
 
-    var item = list[month];
+		var item = list[month];
 
-    var data = storage.getSync( 'wallpapers.' + month );
+		var data = storage.getSync( 'wallpapers.' + month );
 
-    if( item.portrait && !(data.portrait && wallpaper_exists( item.portrait ) ) ) {
-      download_wallpaper( item.portrait, 'portrait', month );
-    }
-    
-    if( item.landscape && !(data.landscape && wallpaper_exists( item.landscape ) ) ) {
-      download_wallpaper( item.landscape, 'landscape', month );
-    }
-  }
+		if( item.portrait && !(data.portrait && wallpaper_exists( item.portrait ) ) ) {
+			download_wallpaper( item.portrait, 'portrait', month );
+		}
+		
+		if( item.landscape && !(data.landscape && wallpaper_exists( item.landscape ) ) ) {
+			download_wallpaper( item.landscape, 'landscape', month );
+		}
+	}
 }
 
 function save_wallpaper_setting( filename, orientation, key ){
-  if( key && orientation ) {
-    var data = storage.getSync( 'wallpapers.' + key );
+	if( key && orientation ) {
+		var data = storage.getSync( 'wallpapers.' + key );
 
-    data[orientation] = filename;
-    storage.set( 'wallpapers.' + key, data );
-  }
+		data[orientation] = filename;
+		storage.set( 'wallpapers.' + key, data );
+	}
 }
 
 function wallpaper_exists( filename ){
-  console.log( 'check for ' + filename );
-  try {
-    if ( fs.existsSync( app.getPath( 'userData' ) + '/files/' + filename ) ) {
-      return true
-    }
-  } catch(err) {
-    console.error(err)
-  }
+	console.log( 'check for ' + filename );
+	try {
+		if ( fs.existsSync( app.getPath( 'userData' ) + '/files/' + filename ) ) {
+			return true
+		}
+	} catch(err) {
+		console.error(err)
+	}
 
-  return false;
+	return false;
 }
 
 function download_wallpaper( filename, orientation = '', key = false ){
-  console.log( 'downloading ' + filename );
-  (async () => {//Wrapping the code with an async function, just for the sake of example.
+	console.log( 'downloading ' + filename );
+	(async () => {//Wrapping the code with an async function, just for the sake of example.
 
-    const downloader = new Downloader({
-      url: "https://github.com/Nettmaker/wallpapers/raw/main/" + filename,
-      directory: app.getPath( 'userData' ) + "/files",//This folder will be created, if it doesn't exist.               
-    })
-  
-    try {
-      await downloader.download();//Downloader.download() returns a promise.
-      eventEmitter.emit('wallpaper-downloaded', filename, orientation, key);
-    } catch (error) {
-      //IMPORTANT: Handle a possible error. An error is thrown in case of network errors, or status codes of 400 and above.
-      //Note that if the maxAttempts is set to higher than 1, the error is thrown only if all attempts fail.
-      console.log('Download failed',error);
-    }
+		const downloader = new Downloader({
+			url: "https://github.com/Nettmaker/wallpapers/raw/main/" + filename,
+			directory: app.getPath( 'userData' ) + "/files",//This folder will be created, if it doesn't exist.               
+		})
+	
+		try {
+			await downloader.download();//Downloader.download() returns a promise.
+			eventEmitter.emit('wallpaper-downloaded', filename, orientation, key);
+		} catch (error) {
+			//IMPORTANT: Handle a possible error. An error is thrown in case of network errors, or status codes of 400 and above.
+			//Note that if the maxAttempts is set to higher than 1, the error is thrown only if all attempts fail.
+			console.log('Download failed',error);
+		}
 
 
-  })(); 
+	})(); 
 }
 
 function has_portrait_screens(){
-  const displays = screen.getAllDisplays();
-  for( var i = 0; i < displays.length; i++ ) {
-    
-    let is_portrait = displays[i].bounds.width < displays[i].bounds.height;
-    
-    if( is_portrait ) {
-      return true;
-    }
-  }
+	const displays = screen.getAllDisplays();
+	for( var i = 0; i < displays.length; i++ ) {
+		
+		let is_portrait = displays[i].bounds.width < displays[i].bounds.height;
+		
+		if( is_portrait ) {
+			return true;
+		}
+	}
 
-  return false;
+	return false;
 }
 
 function set_wallpapers( month ) {
-  const displays = screen.getAllDisplays();
+	const displays = screen.getAllDisplays();
 
-  if( month.portrait && !wallpaper_exists( month.portrait ) ) {
-    return;
-  }
+	if( month.portrait && !wallpaper_exists( month.portrait ) ) {
+		return;
+	}
 
-  if( month.landscape && !wallpaper_exists( month.landscape ) ) {
-    return;
-  }
+	if( month.landscape && !wallpaper_exists( month.landscape ) ) {
+		return;
+	}
 
-  for( var i = 0; i < displays.length; i++ ) {
-    
-    console.log( 'Checking screen ' + i );
+	for( var i = 0; i < displays.length; i++ ) {
+		
+		console.log( 'Checking screen ' + i );
 
-    let is_portrait = displays[i].bounds.width < displays[i].bounds.height;
-    let image = month.landscape;
-    
-    if( is_portrait && month.portrait ) {
-      image = month.portrait;
-    }
+		let is_portrait = displays[i].bounds.width < displays[i].bounds.height;
+		let image = month.landscape;
+		
+		if( is_portrait && month.portrait ) {
+			image = month.portrait;
+		}
 
-    let screen = i;
+		let screen = i;
 
-    wallpaper.get({
-      screen: screen
-    }).then( ( path ) => {
-      
-      if( path != app.getPath( 'userData' ) + '/files/' + image ) {
-        console.log('wallpaper on screen ' + screen + ' has changed – updating it now');
-        wallpaper.set( app.getPath( 'userData' ) + '/files/' + image, {
-          'screen': screen,
-          'scale': 'fill'
-        });
-      } else {
-        console.log('wallpaper unchanged, skip…');
-      }
-      
-    } );
+		wallpaper.get({
+			screen: screen
+		}).then( ( path ) => {
+			
+			if( path != app.getPath( 'userData' ) + '/files/' + image ) {
+				console.log('wallpaper on screen ' + screen + ' has changed – updating it now');
+				wallpaper.set( app.getPath( 'userData' ) + '/files/' + image, {
+					'screen': screen,
+					'scale': 'fill'
+				});
+			} else {
+				console.log('wallpaper unchanged, skip…');
+			}
+			
+		} );
 
-  }
+	}
 
-  eventEmitter.emit('wallpaper-changed', month);
+	eventEmitter.emit('wallpaper-changed', month);
 }
