@@ -269,10 +269,22 @@ function set_wallpapers( month ) {
       image = month.portrait;
     }
 
-    wallpaper.set( './files/' + image, {
-      'screen': i,
-      'scale': 'fill'
-    });   
+    wallpaper.get({
+      screen: i
+    }).then( ( path ) => {
+      
+      if( path != app.getAppPath() + '/files/' + image ) {
+        console.log('wallpaper on screen ' + i + ' has changed – updating it now');
+        wallpaper.set( './files/' + image, {
+          'screen': i,
+          'scale': 'fill'
+        });
+      } else {
+        console.log('wallpaper unchanged, skip…');
+      }
+      
+    } );
+
   }
 
   eventEmitter.emit('wallpaper-changed', month);
