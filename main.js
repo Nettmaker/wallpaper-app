@@ -262,6 +262,8 @@ function set_wallpapers( month ) {
 
   for( var i = 0; i < displays.length; i++ ) {
     
+    console.log( 'Checking screen ' + i );
+
     let is_portrait = displays[i].bounds.width < displays[i].bounds.height;
     let image = month.landscape;
     
@@ -269,14 +271,16 @@ function set_wallpapers( month ) {
       image = month.portrait;
     }
 
+    let screen = i;
+
     wallpaper.get({
-      screen: i
+      screen: screen
     }).then( ( path ) => {
       
       if( path != app.getAppPath() + '/files/' + image ) {
-        console.log('wallpaper on screen ' + i + ' has changed – updating it now');
+        console.log('wallpaper on screen ' + screen + ' has changed – updating it now');
         wallpaper.set( './files/' + image, {
-          'screen': i,
+          'screen': screen,
           'scale': 'fill'
         });
       } else {
