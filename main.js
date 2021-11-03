@@ -1,9 +1,10 @@
-const { app, Menu, Tray, BrowserWindow, screen, powerMonitor, Notification } = require('electron')
+const { app, ipcMain, Menu, Tray, BrowserWindow, screen, powerMonitor, Notification } = require('electron')
 const {enforceMacOSAppLocation, showAboutWindow} = require('electron-util');
 const wallpaper = require('wallpaper');
 const Downloader = require('nodejs-file-downloader');
-const storage = require('electron-json-storage');
+const Store = require('electron-store');
 const fs = require('fs');
+const path = require('path');
 const fetch = require('node-fetch');
 const EventEmitter = require('events');
 const { autoUpdater } = require("electron-updater");
@@ -36,11 +37,17 @@ const { autoUpdater } = require("electron-updater");
  * 
  */
 
+ const store = new Store();
+
+
 const eventEmitter = new EventEmitter();
 var tray = false;
 var timeout = 0;
+var window = false;
 
 app.whenReady().then(() => {
+
+	Store.initRenderer();
 
 	app.dock.hide();
 
@@ -55,7 +62,7 @@ app.whenReady().then(() => {
 	eventEmitter.on('wallpaper-list-updated', update_menu );
 
 	powerMonitor.on('unlock-screen', () => {
-		var available = storage.getSync('available-wallpapers');
+		var available = store.get('available-wallpapers', {});
 		var ONE_HOUR = 30 * 60 * 1000;
 		
 		if( available.timestamp ) {
@@ -79,14 +86,28 @@ app.whenReady().then(() => {
 	// the monitor setup changes
 	app.on('gpu-info-update', handle_monitor_change);
 
+	show_gallery_window();
+
 	autoUpdater.checkForUpdatesAndNotify();
 });
+
+ipcMain.handle('read-user-data-path', async (event) => {
+	return app.getPath('userData');
+  })
+
+ipcMain.on('set-wallpaper', (event, month) => {
+	wallpapers = store.get( 'available-wallpapers.list', [] );
+
+	if( wallpapers[ month ] ) {
+		set_wallpapers( wallpapers[ month ] );
+	}
+})
 
 function handle_monitor_change(){
 	// Todo: check if anything actually changed
 	clearTimeout( timeout );
 	timeout = setTimeout( () => {
-		var current = storage.getSync('current');
+		var current = store.get('current', {});
 		console.log( 'applying the background again' );
 		if( current.month ) {
 			set_wallpapers( current.month );
@@ -119,20 +140,21 @@ autoUpdater.on('update-downloaded', () => {
 });
 
 function set_wallpaper_to_latest(){
-	var available = storage.getSync('available-wallpapers');
+	var available = store.get('available-wallpapers', {});
 
 	if( available.list ) {
 		var last_month = Object.keys( available.list ).pop();
 		var last = available.list[ last_month ];
 		
-		storage.set(
+		store.set(
 			'current',
 			{
 				month: last,
 				key: last_month
-			},
-			() => set_wallpapers( last )  
+			}
 		);
+
+		set_wallpapers( last );
 	}
 }
 
@@ -142,8 +164,8 @@ function set_wallpaper_to_latest(){
  */
 function update_menu(){
 
-	var current = storage.getSync('current');
-	var available = storage.getSync('available-wallpapers');
+	var current = store.get('current', {});
+	var available = store.get('available-wallpapers', {});
 
 	if( available.list ) {
 		var last_month = Object.keys( available.list ).pop();
@@ -174,6 +196,11 @@ function update_menu(){
 			}
 		},
 		{
+			id: 'apply-latest',
+			label: 'Pick a wallpaper',
+			click: show_gallery_window
+		},
+		{
 			id: 'apply-random',
 			label: 'Apply random wallpaper',
 			enabled: available.list || false,
@@ -198,32 +225,30 @@ function update_menu(){
 				let random_month = keys[ Math.floor( Math.random() * keys.length ) ];
 				let item = available.list[ random_month ];
 
-				storage.set(
+				store.set(
 					'current',
 					{
 						month: item,
 						key: random_month
-					},
-					() => {
-							set_wallpapers( item );
 					}
 				);
+
+				set_wallpapers( item );
 			}
 		},
 		{ type: 'separator' },
 		{
-			label: ( (storage.getSync('auto_open')).active ? '✓ ' : '' ) + 'Start at login',
+			label: ( (store.get('auto_open', {})).active ? '✓ ' : '' ) + 'Start at login',
 			click: function(){
-				let open_at_login = storage.getSync( 'auto_open' );
+				let open_at_login = store.get( 'auto_open', {} );
 				app.setLoginItemSettings({
 					openAtLogin: !open_at_login.active
 				});
 
 				open_at_login.active = !open_at_login.active;
 				
-				storage.set( 'auto_open', open_at_login, () => {
-					update_menu();
-				} );
+				store.set( 'auto_open', open_at_login );
+				update_menu();
 
 			}
 		},
@@ -250,6 +275,22 @@ function update_menu(){
 	tray.setContextMenu(contextMenu);
 }
 
+function show_gallery_window(){
+	if( !window ) {
+		window = new BrowserWindow({
+			width: 640,
+			height: 400,
+			webPreferences: {
+				nodeIntegration: true,
+				contextIsolation: false,
+				enableRemoteModule: true,
+				// preload: path.join(__dirname, 'renderer.js')
+			}
+		});
+		window.loadFile( path.join(__dirname, 'gallery.html') );
+	}
+}
+
 /*
  * Downloads the feed of available wallpapers from github
  */
@@ -266,7 +307,7 @@ function load_available_wallpapers(){
 			.then((json) => {
 				console.log('downloaded');
 
-				let available = storage.getSync( 'available-wallpapers' );
+				let available = store.get( 'available-wallpapers', {} );
 
 				let update_wallpaper = false;
 
@@ -292,15 +333,16 @@ function load_available_wallpapers(){
 					}
 				}
 
-				storage.set( 'available-wallpapers', {
+				store.set( 'available-wallpapers', {
 					list: json,
 					timestamp: + new Date()
-				}, () => {
-					eventEmitter.emit('wallpaper-list-updated', json);
-					if( update_wallpaper ) {
-						set_wallpaper_to_latest();
-					}
 				});
+
+				eventEmitter.emit('wallpaper-list-updated', json);
+				
+				if( update_wallpaper ) {
+					set_wallpaper_to_latest();
+				}
 				
 			});
 }
@@ -314,7 +356,7 @@ function sync_wallpapers( list ){
 
 		var item = list[month];
 
-		var data = storage.getSync( 'wallpapers.' + month );
+		var data = store.get( 'wallpapers.' + month, {} );
 
 		if( item.portrait && !(data.portrait && wallpaper_exists( item.portrait ) ) ) {
 			download_wallpaper( item.portrait, 'portrait', month );
@@ -327,8 +369,8 @@ function sync_wallpapers( list ){
 }
 
 function currently_using_latest(){
-	var current = storage.getSync('current');
-	var available = storage.getSync('available-wallpapers');
+	var current = store.get('current', {});
+	var available = store.get('available-wallpapers', {});
 
 	if( !available.list ) {
 		return false;
@@ -341,10 +383,10 @@ function currently_using_latest(){
 
 function save_wallpaper_setting( filename, orientation, key ){
 	if( key && orientation ) {
-		var data = storage.getSync( 'wallpapers.' + key );
+		var data = store.get( 'wallpapers.' + key, {} );
 
 		data[orientation] = filename;
-		storage.set( 'wallpapers.' + key, data );
+		store.set( 'wallpapers.' + key, data );
 	}
 }
 

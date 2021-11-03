@@ -24,18 +24,21 @@
     ]
   },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/Nettmaker/wallpaper-app.git"
+    "type": "git",
+    "url": "https://github.com/Nettmaker/wallpaper-app.git"
   },
   "author": "Thomas Bensmann",
   "license": "MIT",
   "dependencies": {
     "electron-json-storage": "^4.5.0",
+    "electron-store": "^8.0.1",
     "electron-updater": "^4.3.9",
     "electron-util": "^0.17.2",
     "node-downloader-helper": "^1.0.19",
     "node-fetch": "^2.0.0",
     "nodejs-file-downloader": "^4.7.4",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
     "wallpaper": "^5.0.1"
   },
   "devDependencies": {
