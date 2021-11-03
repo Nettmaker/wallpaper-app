@@ -277,6 +277,8 @@ function download_wallpaper( filename, orientation = '', key = false ){
 
 		const downloader = new Downloader({
 			url: "https://github.com/Nettmaker/wallpapers/raw/main/" + filename,
+			maxAttempts: 5,
+			cloneFiles:false,
 			directory: app.getPath( 'userData' ) + "/files",//This folder will be created, if it doesn't exist.               
 		})
 	
