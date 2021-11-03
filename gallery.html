@@ -6,26 +6,111 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Wallpapers</title>
 	<style>
-		img {
-			max-width: 100%;
+		body {
+			margin: 2em;
+			background: #fff;
+			font-family: "Ubuntu", sans-serif;
+			/* color: #0A5B64; */
 		}
 
+		h1 {
+			font-weight: 500;
+			color: #0A5B64;
+			margin-top: 0;
+		}
+
+		
+		
 		ul {
 			display: flex;
 			margin: 0;
 			flex-wrap: wrap;
 			padding: 0;
-			gap: 1em;
+			gap: 2em;
+		}
+		
+		li {
+			max-width: calc( 50% - 1em);
+			list-style: none;
+			overflow: hidden;
+			box-sizing: border-box;
+			position: relative;
+			box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+			border-radius: 5px;
+		}
+		
+		li.current::before {
+			content: "Current wallpaper";
+			background: #0A5B64;
+			color: white;
+			position: absolute;
+			left: 1em;
+			top: 1em;
+			padding: .5em;
+			border-radius: 5px;
+			z-index: 10;
+			font-size: .9em;
 		}
 
-		li {
-			max-width: calc( 50% - .5em);
-			list-style: none;
+		li:hover>img {
+			transform: scale(1.15);
 		}
+
+		img {
+			transition: transform 0.5s ease;
+			width: 100%;
+			height: 100%;
+			max-width: 100%;
+			display: block;
+			border-radius: 5px;	
+		}
+		
+		div.month {
+			position: absolute;
+			bottom: 0;
+			width: 100%;
+    		height: 80px;
+			border-bottom-left-radius: 5px;
+			border-bottom-right-radius: 5px;
+			display: flex;
+			flex-flow: row wrap;
+			align-items: center;
+			justify-content: space-between;
+		}
+
+		span {
+			/* font-family: "Rubik", sans-serif; */
+			color: white;
+			margin-left: 1em;
+			font-weight: 600;
+			font-size: 1.4em;
+			text-shadow: 2px 3px 5px rgba(0,0,0,0.5);
+		}
+
+		button {
+			background: white;
+			border: 0;
+			font-family: inherit;
+			font-weight: 500;
+			margin-right: 2em;
+    		padding: .5em 1em;
+			border-radius: 5px;
+		}
+
+		li.current>.month>button, button:hover {
+			background: #0A5B64;
+			color: white;
+			cursor: pointer;
+		}
+
+		li.current>.month>button {
+			cursor:not-allowed;
+		}
+
 	</style>
 </head>
 <body>
-	<h1>Pick your wallpaper</h1>
+	<h1>Pick your favorite wallpaper</h1>
 	<div id="wallpapers"></div>
 	<script src="./renderer.js"></script>
 </body>

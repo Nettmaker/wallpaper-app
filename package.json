@@ -34,6 +34,7 @@
     "electron-store": "^8.0.1",
     "electron-updater": "^4.3.9",
     "electron-util": "^0.17.2",
+    "moment": "^2.29.1",
     "node-downloader-helper": "^1.0.19",
     "node-fetch": "^2.0.0",
     "nodejs-file-downloader": "^4.7.4",

@@ -37,7 +37,7 @@ const { autoUpdater } = require("electron-updater");
  * 
  */
 
- const store = new Store();
+const store = new Store();
 
 
 const eventEmitter = new EventEmitter();
@@ -86,10 +86,13 @@ app.whenReady().then(() => {
 	// the monitor setup changes
 	app.on('gpu-info-update', handle_monitor_change);
 
-	show_gallery_window();
+	// show_gallery_window();
 
 	autoUpdater.checkForUpdatesAndNotify();
 });
+
+// Don't shut down the app when all windows are closed
+app.on('window-all-closed', e => e.preventDefault() );
 
 ipcMain.handle('read-user-data-path', async (event) => {
 	return app.getPath('userData');
@@ -196,9 +199,11 @@ function update_menu(){
 			}
 		},
 		{
-			id: 'apply-latest',
+			id: 'pick-wallpaper',
 			label: 'Pick a wallpaper',
-			click: show_gallery_window
+			click: () => {
+				show_gallery_window()
+			}
 		},
 		{
 			id: 'apply-random',
@@ -278,16 +283,20 @@ function update_menu(){
 function show_gallery_window(){
 	if( !window ) {
 		window = new BrowserWindow({
-			width: 640,
-			height: 400,
+			width: 920,
+			height: 700,
 			webPreferences: {
 				nodeIntegration: true,
 				contextIsolation: false,
 				enableRemoteModule: true,
-				// preload: path.join(__dirname, 'renderer.js')
 			}
 		});
 		window.loadFile( path.join(__dirname, 'gallery.html') );
+
+		// When we close the window, allow it to be opened again
+		window.on('close', function() {
+			window = false;
+		});
 	}
 }
 
