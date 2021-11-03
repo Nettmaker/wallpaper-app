@@ -102,6 +102,13 @@ ipcMain.on('set-wallpaper', (event, month) => {
 	wallpapers = store.get( 'available-wallpapers.list', [] );
 
 	if( wallpapers[ month ] ) {
+		store.set(
+			'current',
+			{
+				month: wallpapers[ month ],
+				key: month
+			}
+		);
 		set_wallpapers( wallpapers[ month ] );
 	}
 })
@@ -193,7 +200,7 @@ function update_menu(){
 		{
 			id: 'apply-latest',
 			label: 'Apply latest wallpaper',
-			enabled: currently_using_latest(),
+			enabled: !currently_using_latest(),
 			click: () => {
 				set_wallpaper_to_latest()
 			}
@@ -285,12 +292,15 @@ function show_gallery_window(){
 		window = new BrowserWindow({
 			width: 920,
 			height: 700,
+			frame: false,
+			titleBarOverlay: true,
 			webPreferences: {
 				nodeIntegration: true,
 				contextIsolation: false,
 				enableRemoteModule: true,
 			}
 		});
+		window.setWindowButtonVisibility(true);
 		window.loadFile( path.join(__dirname, 'gallery.html') );
 
 		// When we close the window, allow it to be opened again
@@ -387,7 +397,7 @@ function currently_using_latest(){
 	
 	var last_month = Object.keys( available.list ).pop();
 
-	return current.month && current.month == last_month;
+	return current.key && current.key == last_month;
 }
 
 function save_wallpaper_setting( filename, orientation, key ){

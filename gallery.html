@@ -7,16 +7,62 @@
 	<title>Wallpapers</title>
 	<style>
 		body {
-			margin: 2em;
-			background: #fff;
+			background: #f0f0f0;
 			font-family: "Ubuntu", sans-serif;
-			/* color: #0A5B64; */
+			user-select: none;
+			padding: 0;
+			margin: 0;
+			
+		}
+
+		body::before{
+			content: "";
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 40vh;
+			background: #0A5B64;
+		}
+
+		body::after {
+			content: "";
+			display: block;
+			pointer-events: none;
+			top: 5.63em;
+			/* bottom: 0; */
+			right: 0;
+			left: 0;
+			position: fixed;
+			background: linear-gradient( 180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.1) 10px,rgba(0,0,0,0) 30px);
+			-webkit-mask-image: linear-gradient( 90deg, transparent,#000 10%,#000 90%,transparent 100%);
+			height: 30px;
+			z-index: 25;
+		}
+
+		.header {
+			background: #0A5B64;
+    		overflow: hidden;
+			position: sticky;
+			top: 0;
+			z-index: 20;
+			-webkit-app-region: drag;
 		}
 
 		h1 {
 			font-weight: 500;
-			color: #0A5B64;
-			margin-top: 0;
+			color: #fff;
+			margin-top: 1.2em;
+			font-size: 1.7em;
+			margin-bottom: 1em;
+			text-align: center;
+			text-shadow: 0 2px 5px rgba(0,0,0,.4);
+		}
+
+		#wallpapers {
+			padding: 2em;
+			/* margin-top: -4em; */
+			position: relative;
 		}
 
 		
@@ -35,7 +81,8 @@
 			overflow: hidden;
 			box-sizing: border-box;
 			position: relative;
-			box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+			background: #fff;
+			box-shadow: 0 10px 20px rgba(0,0,0,0.1), 0 6px 6px rgba(0,0,0,0.15);
 			border-radius: 5px;
 		}
 		
@@ -110,7 +157,9 @@
 	</style>
 </head>
 <body>
-	<h1>Pick your favorite wallpaper</h1>
+	<div class="header">
+		<h1>Select a wallpaper</h1>
+	</div>
 	<div id="wallpapers"></div>
 	<script src="./renderer.js"></script>
 </body>
