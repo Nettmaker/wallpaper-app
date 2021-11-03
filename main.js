@@ -1,4 +1,4 @@
-const { app, Menu, Tray, BrowserWindow, screen } = require('electron')
+const { app, Menu, Tray, BrowserWindow, screen, powerMonitor, Notification } = require('electron')
 const {enforceMacOSAppLocation, showAboutWindow} = require('electron-util');
 const wallpaper = require('wallpaper');
 const Downloader = require('nodejs-file-downloader');
@@ -45,10 +45,6 @@ app.whenReady().then(() => {
 	app.dock.hide();
 
 	enforceMacOSAppLocation();
-
-	// storage.clear(function(error) {
-	//   if (error) throw error;
-	// });
 	
 	load_available_wallpapers();
 
@@ -58,8 +54,21 @@ app.whenReady().then(() => {
 	eventEmitter.on('wallpaper-changed', update_menu );
 	eventEmitter.on('wallpaper-list-updated', update_menu );
 
+	powerMonitor.on('unlock-screen', () => {
+		var available = storage.getSync('available-wallpapers');
+		var ONE_HOUR = 30 * 60 * 1000;
+		
+		if( available.timestamp ) {
+			if( ( (new Date) - available.timestamp ) < ONE_HOUR ) {
+				console.log('Checked for new wallpapers less than an 30 minutes ago, lets wait…');
+				return;
+			}
+		}
 
-	
+		console.log('All right, lets check for new wallpapers');
+
+		load_available_wallpapers();
+	});
 
 	tray = new Tray( app.getAppPath() + '/menuIconTemplate.png' );
 	
@@ -83,6 +92,48 @@ function handle_monitor_change(){
 			set_wallpapers( current.month );
 		}
 	}, 300 );
+}
+
+function show_new_wallpaper_notification(){
+	let notification = new Notification({
+		title: 'New Wallpaper!',
+		body: 'A new Nettmaker wallpaper has arrived!',
+		actions: [
+			{
+				type: 'button',
+				text: 'Apply'
+			}
+		]
+	});
+
+	notification.on( 'action', function(){
+		set_wallpaper_to_latest();
+	});
+
+	notification.show();
+}
+
+// When an update is downloaded, automatically restart the app
+autoUpdater.on('update-downloaded', () => {
+	autoUpdater.quitAndInstall();
+});
+
+function set_wallpaper_to_latest(){
+	var available = storage.getSync('available-wallpapers');
+
+	if( available.list ) {
+		var last_month = Object.keys( available.list ).pop();
+		var last = available.list[ last_month ];
+		
+		storage.set(
+			'current',
+			{
+				month: last,
+				key: last_month
+			},
+			() => set_wallpapers( last )  
+		);
+	}
 }
 
 /**
@@ -117,16 +168,9 @@ function update_menu(){
 		{
 			id: 'apply-latest',
 			label: 'Apply latest wallpaper',
-			enabled: available.list && current.key != last_month,
+			enabled: currently_using_latest(),
 			click: () => {
-				storage.set(
-					'current',
-					{
-						month: last,
-						key: last_month
-					},
-					() => set_wallpapers( last )  
-				);
+				set_wallpaper_to_latest()
 			}
 		},
 		{
@@ -196,6 +240,7 @@ function update_menu(){
 				})
 			}
 		},
+		{ type: 'separator' },
 		{
 			label: 'Quit',
 			click: () => { app.quit() }
@@ -210,6 +255,8 @@ function update_menu(){
  */
 function load_available_wallpapers(){
 
+	console.log('Checking for new wallpapers');
+
 	let url = "https://raw.githubusercontent.com/Nettmaker/wallpapers/main/wallpapers.json";
 
 	let settings = { method: "Get" };
@@ -218,11 +265,41 @@ function load_available_wallpapers(){
 			.then(res => res.json())
 			.then((json) => {
 				console.log('downloaded');
+
+				let available = storage.getSync( 'available-wallpapers' );
+
+				let update_wallpaper = false;
+
+				// If we had a list already
+				if( available.list ) {
+					let keys = Object.keys( available.list );
+					let last_key = keys.pop();
+
+					let new_keys = Object.keys( json );
+					let new_last_key = new_keys.pop();
+
+					// And the latest wallpaper changed
+					if( last_key != new_last_key ) {
+
+						if( currently_using_latest() ) {
+							// If currently using "latest" wallpaper then
+							// just apply the new one automatically.
+							update_wallpaper = true;
+						} else {
+							// Show a notification
+							show_new_wallpaper_notification();
+						}
+					}
+				}
+
 				storage.set( 'available-wallpapers', {
 					list: json,
 					timestamp: + new Date()
 				}, () => {
 					eventEmitter.emit('wallpaper-list-updated', json);
+					if( update_wallpaper ) {
+						set_wallpaper_to_latest();
+					}
 				});
 				
 			});
@@ -247,6 +324,19 @@ function sync_wallpapers( list ){
 			download_wallpaper( item.landscape, 'landscape', month );
 		}
 	}
+}
+
+function currently_using_latest(){
+	var current = storage.getSync('current');
+	var available = storage.getSync('available-wallpapers');
+
+	if( !available.list ) {
+		return false;
+	}
+	
+	var last_month = Object.keys( available.list ).pop();
+
+	return current.month && current.month == last_month;
 }
 
 function save_wallpaper_setting( filename, orientation, key ){
