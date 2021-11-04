@@ -133,6 +133,35 @@
 			font-size: 1.4em;
 			text-shadow: 2px 3px 5px rgba(0,0,0,0.5);
 		}
+		
+		span.portrait {
+			content: "portrait";
+			width: 50px;
+			height: 50px;
+			position: absolute;
+			top: 1em;
+			right: 1em;
+			border-radius: 50%;
+			background: url(./dist/images/portrait-monitor.svg);
+			background-color: white;
+			background-position: center;
+			background-size: 100%;
+			background-repeat: no-repeat;
+			box-shadow: 0 10px 20px rgba(0,0,0,0.1), 0 6px 6px rgba(0,0,0,0.15);
+			transition: .4s all;
+		}
+
+		li:hover>span.portrait {
+			transform: rotate(90deg);
+		}
+
+		li.current>span.portrait {
+			background: url(./dist/images/portrait-monitor-white.svg);
+			background-color: #0A5B64;
+			background-position: center;
+			background-size: 100%;
+			background-repeat: no-repeat;
+		}
 
 		button {
 			background: white;

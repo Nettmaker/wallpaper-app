@@ -30,7 +30,8 @@ function WallPaperList( props ) {
 				path: props.path,
 				onChange: () => { setCurrent( current_item_key ) },
 				wallpapers: available_wallpapers[ month ],
-				is_current: current == month
+				is_current: current == month,
+				portrait: available_wallpapers[ month ]['portrait'], 
 			} ) );
 		}
 
@@ -65,7 +66,11 @@ function WallPaperItem( props ){
 					props.onChange();
 				}
 			}, props.is_current ? 'Active' : 'Apply' ),
-		] )
+		] ),
+		h( 'span', {
+			key: props.month + '-portrait',
+			className: props.portrait ? 'portrait' : 'no-portrait',
+		}, ),
 	] );
 }
 
