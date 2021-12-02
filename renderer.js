@@ -67,10 +67,10 @@ function WallPaperItem( props ){
 				}
 			}, props.is_current ? 'Active' : 'Apply' ),
 		] ),
-		h( 'span', {
-			key: props.month + '-portrait',
-			className: props.portrait ? 'portrait' : 'no-portrait',
-		}, ),
+		// h( 'span', {
+		// 	key: props.month + '-portrait',
+		// 	className: props.portrait ? 'portrait' : 'no-portrait',
+		// }, ),
 	] );
 }
 
